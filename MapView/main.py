@@ -1,9 +1,12 @@
 import asyncio
+
 from kivy.app import App
-from kivy_garden.mapview import MapMarker, MapView
-from screeninfo import get_monitors
-from kivy.core.window import Window
 from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.uix.button import Button
+from kivy_garden.mapview import MapMarker, MapView, MapSource
+from screeninfo import get_monitors
+
 from datasource import Datasource
 
 
@@ -90,6 +93,13 @@ class MapViewApp(App):
         track_way_marker = MapMarker(lat=point[0], lon=point[1], source="images/track_way.png")
         self.mapview.add_marker(track_way_marker)
 
+    def change_map_source(self, instance):
+        if self.mapview.map_source.url == 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png':
+            new_source_url = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        else:
+            new_source_url = 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png'
+        self.mapview.map_source = MapSource(url=new_source_url)
+
     def build(self):
         """
         Ініціалізує мапу MapView(zoom, lat, lon)
@@ -98,6 +108,11 @@ class MapViewApp(App):
         self.mapview = MapView(lat=50.450173, lon=30.520089, zoom=16)
         monitor = get_monitors()[0]
         Window.size = (monitor.width, monitor.height)
+
+        button = Button(background_normal="images/dark_theme.png", size=(24, 24))
+        button.bind(on_press=self.change_map_source)
+        self.mapview.add_widget(button)
+
         return self.mapview
 
 
