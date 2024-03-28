@@ -32,6 +32,7 @@ class MapViewApp(App):
         Викликається регулярно для оновлення мапи
         """
         points = self.datasource.get_new_points()
+        check_list = []
         if self.start:
             try:
                 self.set_start_marker(points[0])
@@ -39,15 +40,21 @@ class MapViewApp(App):
             except IndexError:
                 pass
         try:
-            bump = max(points, key=lambda x: x[2])
-            pothole = min(points, key=lambda x: x[2])
-            for point in points:
-                self.set_track_way_marker(point)
-                if point == bump:
-                    self.set_bump_marker(point)
-                elif point == pothole:
-                    self.set_pothole_marker(point)
-            self.update_car_marker(points[-1])
+            for i in range(len(points)):
+                check_list.append(points[i][0])
+            check_set = set(check_list)
+            if len(check_set) != len(check_list):
+                self.set_traffic_light_marker(points[0])
+            else:
+                bump = max(points, key=lambda x: x[2])
+                pothole = min(points, key=lambda x: x[2])
+                for point in points:
+                    self.set_track_way_marker(point)
+                    if point == bump:
+                        self.set_bump_marker(point)
+                    elif point == pothole:
+                        self.set_pothole_marker(point)
+                self.update_car_marker(points[-1])
         except ValueError:
             pass
 
@@ -95,13 +102,21 @@ class MapViewApp(App):
         track_way_marker = MapMarker(lat=point[0], lon=point[1], source="images/track_way.png")
         self.mapview.add_marker(track_way_marker)
 
+    def set_traffic_light_marker(self, point):
+        """
+        Встановлює маркер для пройденного шляху
+        :param point: GPS координати
+        """
+        traffic_light_marker = MapMarker(lat=point[0], lon=point[1], source="images/traffic_light.png")
+        self.mapview.add_marker(traffic_light_marker)
+
     def change_map_source(self, instance):
         if self.mapview.map_source.url != 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png':
             new_source_url = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
         else:
             new_source_url = 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png'
         self.mapview.map_source = MapSource(url=new_source_url)
-
+        
     def build(self):
         """
         Ініціалізує мапу MapView(zoom, lat, lon)
