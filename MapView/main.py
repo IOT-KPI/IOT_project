@@ -3,7 +3,8 @@ import asyncio
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.uix.button import Button
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.image import Image
 from kivy_garden.mapview import MapMarker, MapView, MapSource
 from screeninfo import get_monitors
 
@@ -18,6 +19,7 @@ class MapViewApp(App):
         self.car_marker = None
         self.mapview = None
         self.start = True
+        self.button = None
 
     def on_start(self):
         """
@@ -94,7 +96,7 @@ class MapViewApp(App):
         self.mapview.add_marker(track_way_marker)
 
     def change_map_source(self, instance):
-        if self.mapview.map_source.url == 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png':
+        if self.mapview.map_source.url != 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png':
             new_source_url = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
         else:
             new_source_url = 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png'
@@ -109,11 +111,51 @@ class MapViewApp(App):
         monitor = get_monitors()[0]
         Window.size = (monitor.width, monitor.height)
 
-        button = Button(background_normal="images/dark_theme.png", size=(24, 24))
-        button.bind(on_press=self.change_map_source)
-        self.mapview.add_widget(button)
+        # Створення кнопки з зображенням
+        self.button = ImageButton(source="images/dark_theme.png",
+                                  pressed_source="images/dark_theme_press.png",
+                                  size_hint=(None, None), allow_stretch=True)
+        self.button.bind(on_touch_down=self.on_button_touch)
+        self.mapview.add_widget(self.button)
+        # self.adjust_button_size(self.mapview.size)  # Зміна розміру кнопки при створенні
+        self.mapview.bind(size=lambda instance, value: self.adjust_button_size(
+            value))
 
         return self.mapview
+
+    def adjust_button_size(self, size):
+        """
+        Функція для зміни розміру кнопки відповідно до розміру мапи
+        :param size: новий розмір мапи
+        """
+        new_size = min(size) / 18
+        self.button.size = (new_size, new_size)
+
+    def on_button_touch(self, instance, touch):
+        """
+        Обробник події натискання на кнопку
+        :param instance: екземпляр кнопки
+        :param touch: дотик
+        """
+        if self.button.collide_point(*touch.pos):
+            self.change_map_source(instance)
+            self.button.switch_source()
+
+
+class ImageButton(ButtonBehavior, Image):
+    def __init__(self, source='', pressed_source='', **kwargs):
+        super().__init__(**kwargs)
+        self.source = source
+        self.pressed_source = pressed_source
+        self.sources = [self.source, self.pressed_source]  # Список шляхів до зображень
+        self.index = 0  # Початковий індекс для чергування зображень
+
+    def switch_source(self):
+        """
+        Функція для перемикання зображень кнопки
+        """
+        self.index = (self.index + 1) % len(self.sources)  # Зміна індексу
+        self.source = self.sources[self.index]  # Встановлення нового зображення
 
 
 if __name__ == "__main__":
