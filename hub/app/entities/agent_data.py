@@ -13,6 +13,10 @@ class GpsData(BaseModel):
     longitude: float
 
 
+class TrafficData(BaseModel):
+    vehicle_count: int
+
+
 class AgentData(BaseModel):
     user_id: int
     accelerometer: AccelerometerData

@@ -32,6 +32,7 @@ class MapViewApp(App):
         Викликається регулярно для оновлення мапи
         """
         points = self.datasource.get_new_points()
+        print(points)
         check_list = []
         if self.start:
             try:
@@ -49,7 +50,10 @@ class MapViewApp(App):
                 bump = max(points, key=lambda x: x[2])
                 pothole = min(points, key=lambda x: x[2])
                 for point in points:
-                    self.set_track_way_marker(point)
+                    if points[0][3] >= 6 and points[-1][3] >= 6:
+                        self.set_track_way_marker(point, "red_dot.png")
+                    else:
+                        self.set_track_way_marker(point, "track_way.png")
                     if point == bump:
                         self.set_bump_marker(point)
                     elif point == pothole:
@@ -94,12 +98,13 @@ class MapViewApp(App):
         start_marker = MapMarker(lat=point[0], lon=point[1], source="images/start.png")
         self.mapview.add_marker(start_marker)
 
-    def set_track_way_marker(self, point):
+    def set_track_way_marker(self, point, image):
         """
         Встановлює маркер для пройденного шляху
+        :param image: image
         :param point: GPS координати
         """
-        track_way_marker = MapMarker(lat=point[0], lon=point[1], source="images/track_way.png")
+        track_way_marker = MapMarker(lat=point[0], lon=point[1], source="images/" + image)
         self.mapview.add_marker(track_way_marker)
 
     def set_traffic_light_marker(self, point):
@@ -116,7 +121,7 @@ class MapViewApp(App):
         else:
             new_source_url = 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png'
         self.mapview.map_source = MapSource(url=new_source_url)
-        
+
     def build(self):
         """
         Ініціалізує мапу MapView(zoom, lat, lon)
