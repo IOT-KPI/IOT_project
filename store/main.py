@@ -42,6 +42,7 @@ processed_agent_data = Table(
     Column("latitude", Float),
     Column("longitude", Float),
     Column("timestamp", DateTime),
+    Column("vehicle_count", Integer),
 )
 SessionLocal = sessionmaker(bind=engine)
 
@@ -57,6 +58,7 @@ class ProcessedAgentDataInDB(BaseModel):
     latitude: float
     longitude: float
     timestamp: datetime
+    vehicle_count: int
 
 
 # FastAPI models
@@ -70,6 +72,8 @@ class GpsData(BaseModel):
     latitude: float
     longitude: float
 
+class TrafficData(BaseModel):
+    vehicle_count: int
 
 class AgentData(BaseModel):
     user_id: int
@@ -93,6 +97,7 @@ class AgentData(BaseModel):
 class ProcessedAgentData(BaseModel):
     road_state: str
     agent_data: AgentData
+    traffic_data: TrafficData
 
 
 # WebSocket subscriptions
@@ -133,6 +138,7 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
             accelerometer = agent_data.accelerometer
             gps = agent_data.gps
             timestamp = datetime.now()
+            vehicle_count = item.traffic_data.vehicle_count
 
             query = insert(processed_agent_data).values(
                 road_state=road_state,
@@ -142,7 +148,8 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
                 z=accelerometer.z,
                 latitude=gps.latitude,
                 longitude=gps.longitude,
-                timestamp=timestamp
+                timestamp=timestamp,
+                vehicle_count=vehicle_count
             )
             db.execute(query)
 
@@ -201,6 +208,7 @@ def update_processed_agent_data(
         gps = agent_data.gps
         user_id = agent_data.user_id
         timestamp = datetime.now()
+        vehicle_count = data.traffic_data.vehicle_count
         update_query = (
             update(processed_agent_data)
             .where(processed_agent_data.c.id == processed_agent_data_id)
@@ -212,7 +220,8 @@ def update_processed_agent_data(
                 z=accelerometer.z,
                 latitude=gps.latitude,
                 longitude=gps.longitude,
-                timestamp=timestamp
+                timestamp=timestamp,
+                vehicle_count=vehicle_count
             )
         )
 

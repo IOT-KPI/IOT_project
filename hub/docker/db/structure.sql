@@ -7,5 +7,6 @@ CREATE TABLE processed_agent_data (
     z FLOAT,
     latitude FLOAT,
     longitude FLOAT,
-    timestamp TIMESTAMP
+    timestamp TIMESTAMP,
+    vehicle_count INTEGER
 );

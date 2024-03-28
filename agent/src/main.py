@@ -5,6 +5,7 @@ from schema.aggregated_data_schema import AggregatedDataSchema
 from schema.parking_schema import ParkingSchema
 from file_datasource import FileDatasource
 import config
+from schema.traffic_schema import TrafficSchema
 
 
 def connect_mqtt(broker, port):
@@ -25,13 +26,13 @@ def connect_mqtt(broker, port):
     return client
 
 
-def publish(client, agent_topic, parking_topic, datasource, delay):
-    accelerometer_data, gps_data, parking_data, accelerometer_file, gps_file, parking_file = datasource.startReading()
+def publish(client, agent_topic, parking_topic, traffic_topic, datasource, delay):
+    accelerometer_data, gps_data, parking_data, traffic_data, accelerometer_file, gps_file, parking_file, traffic_file = datasource.startReading()
 
     while gps_data:
         time.sleep(delay)
-        agent_data, parking_agent_data = datasource.read(accelerometer_data, gps_data, parking_data)
-        agent_msg, parking_msg = AggregatedDataSchema().dumps(agent_data), ParkingSchema().dumps(parking_agent_data)
+        agent_data, parking_agent_data, read_traffic_data = datasource.read(accelerometer_data, gps_data, parking_data, traffic_data)
+        agent_msg, parking_msg, traffic_msg = AggregatedDataSchema().dumps(agent_data), ParkingSchema().dumps(parking_agent_data), TrafficSchema().dumps(read_traffic_data)
 
         # result: [0, 1]
         agent_result = client.publish(agent_topic, agent_msg)
@@ -50,7 +51,15 @@ def publish(client, agent_topic, parking_topic, datasource, delay):
         else:
             print(f"Failed to send message to topic {parking_topic}")
 
-    datasource.stopReading(accelerometer_file, gps_file, parking_file)
+        traffic_result = client.publish(traffic_topic, traffic_msg)
+        traffic_status = traffic_result[0]
+        if traffic_status == 0:
+            pass
+            # print(f"Send `{traffic_msg}` to topic `{traffic_topic}`")
+        else:
+            print(f"Failed to send message to topic {traffic_topic}")
+
+    datasource.stopReading(accelerometer_file, gps_file, parking_file, traffic_file)
 
 
 def run():
@@ -60,10 +69,11 @@ def run():
     datasource = FileDatasource(
         "data/accelerometer.csv",
         "data/gps.csv",
-        "data/parking.csv"
+        "data/parking.csv",
+        "data/traffic.csv"
     )
     # Infinity publish data
-    publish(client, config.MQTT_AGENT_TOPIC, config.MQTT_PARKING_TOPIC, datasource, config.DELAY)
+    publish(client, config.MQTT_AGENT_TOPIC, config.MQTT_PARKING_TOPIC, config.MQTT_TRAFFIC_TOPIC, datasource, config.DELAY)
 
 
 if __name__ == "__main__":

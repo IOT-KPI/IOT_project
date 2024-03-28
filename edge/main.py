@@ -5,7 +5,8 @@ from app.adapters.hub_mqtt_adapter import HubMqttAdapter
 from config import (
     MQTT_BROKER_HOST,
     MQTT_BROKER_PORT,
-    MQTT_TOPIC,
+    MQTT_AGENT_TOPIC,
+    MQTT_TRAFFIC_TOPIC,
     HUB_URL,
     HUB_MQTT_BROKER_HOST,
     HUB_MQTT_BROKER_PORT,
@@ -35,7 +36,8 @@ if __name__ == "__main__":
     agent_adapter = AgentMQTTAdapter(
         broker_host=MQTT_BROKER_HOST,
         broker_port=MQTT_BROKER_PORT,
-        topic=MQTT_TOPIC,
+        agent_topic=MQTT_AGENT_TOPIC,
+        traffic_topic=MQTT_TRAFFIC_TOPIC,
         hub_gateway=hub_adapter,
     )
     try:

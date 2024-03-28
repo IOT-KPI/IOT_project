@@ -1,9 +1,11 @@
 import asyncio
 import json
 from datetime import datetime
+
 import websockets
 from kivy import Logger
 from pydantic import BaseModel, field_validator
+
 from config import STORE_HOST, STORE_PORT
 
 
@@ -25,10 +27,15 @@ class AgentData(BaseModel):
     timestamp: datetime
 
 
+class TrafficData(BaseModel):
+    vehicle_count: int
+
+
 # Pydantic models
 class ProcessedAgentData(BaseModel):
     road_state: str
     agent_data: AgentData
+    traffic_data: TrafficData
 
     @classmethod
     @field_validator("timestamp", mode="before")
@@ -81,7 +88,8 @@ class Datasource:
             (
                 processed_agent_data.agent_data.gps.longitude,
                 processed_agent_data.agent_data.gps.latitude,
-                processed_agent_data.agent_data.accelerometer.y
+                processed_agent_data.agent_data.accelerometer.y,
+                processed_agent_data.traffic_data.vehicle_count
             )
         ]
         self._new_points.extend(new_points)
