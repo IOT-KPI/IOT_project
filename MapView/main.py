@@ -5,8 +5,11 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.image import Image
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
 from kivy_garden.mapview import MapMarker, MapView, MapSource
 from screeninfo import get_monitors
+from math import sqrt
 
 from datasource import Datasource
 
@@ -20,6 +23,12 @@ class MapViewApp(App):
         self.mapview = None
         self.start = True
         self.button = None
+        self.latitude = 0
+        self.longitude = 0
+        self.constant = 91.4
+        self.time = 0
+        self.distances = []
+        self.info_popup = None
 
     def on_start(self):
         """
@@ -32,8 +41,18 @@ class MapViewApp(App):
         Викликається регулярно для оновлення мапи
         """
         points = self.datasource.get_new_points()
-        print(points)
         check_list = []
+        if len(points) != 5 and self.longitude != 0:
+            total_distance = round(sum(self.distances) * self.constant, 3)
+            average_speed = round(((sum(self.distances) * self.constant) / (self.time / 3600)), 3)
+            self.show_info_popup(total_distance, average_speed)
+        else:
+            for i in range(len(points) - 1):
+                distance = sqrt((points[i + 1][0] - points[i][0]) ** 2 + (points[i + 1][1] - points[i][1]) ** 2)
+                self.distances.append(distance)
+            self.time += 5
+            self.latitude, self.longitude = points[-1][0], points[-1][1]
+
         if self.start:
             try:
                 self.set_start_marker(points[0])
@@ -122,6 +141,18 @@ class MapViewApp(App):
             new_source_url = 'https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png'
         self.mapview.map_source = MapSource(url=new_source_url)
 
+    def show_info_popup(self, distance, speed):
+        """
+        Показує Popup з інформацією про відстань та швидкість
+        :param distance: відстань
+        :param speed: швидкість
+        """
+        if not self.info_popup:
+            self.info_popup = Popup(title='Info', size_hint=(None, None), size=(400, 200))
+            content = Label(text=f'Total distance (km): {distance}\nAverage speed (km/h): {speed}')
+            self.info_popup.content = content
+        self.info_popup.open()
+
     def build(self):
         """
         Ініціалізує мапу MapView(zoom, lat, lon)
@@ -137,7 +168,7 @@ class MapViewApp(App):
                                   size_hint=(None, None), allow_stretch=True)
         self.button.bind(on_touch_down=self.on_button_touch)
         self.mapview.add_widget(self.button)
-        # self.adjust_button_size(self.mapview.size)  # Зміна розміру кнопки при створенні
+        # self.adjust_button_size(self.mapview.size)
         self.mapview.bind(size=lambda instance, value: self.adjust_button_size(
             value))
 
@@ -167,15 +198,15 @@ class ImageButton(ButtonBehavior, Image):
         super().__init__(**kwargs)
         self.source = source
         self.pressed_source = pressed_source
-        self.sources = [self.source, self.pressed_source]  # Список шляхів до зображень
-        self.index = 0  # Початковий індекс для чергування зображень
+        self.sources = [self.source, self.pressed_source]
+        self.index = 0
 
     def switch_source(self):
         """
         Функція для перемикання зображень кнопки
         """
-        self.index = (self.index + 1) % len(self.sources)  # Зміна індексу
-        self.source = self.sources[self.index]  # Встановлення нового зображення
+        self.index = (self.index + 1) % len(self.sources)
+        self.source = self.sources[self.index]
 
 
 if __name__ == "__main__":
